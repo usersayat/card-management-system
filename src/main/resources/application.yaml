@@ -16,5 +16,8 @@ spring:
       hibernate:
         format_sql: true
 
-  server:
-    port: 8081
+jwt:
+  secret: "MY_SUPER_SECRET_KEY_FOR_JWT_SIGNING_1234567890_MIN_32_CHARS"
+
+#  server:
+#    port: 8081
