@@ -19,5 +19,9 @@ spring:
 jwt:
   secret: "MY_SUPER_SECRET_KEY_FOR_JWT_SIGNING_1234567890_MIN_32_CHARS"
 
+admin:
+  registration-key: "MY_SUPER_SECRET_ADMIN_PASSWORD_777"
+
 #  server:
 #    port: 8081
+
