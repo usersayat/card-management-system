@@ -1,12 +1,12 @@
-package com.card_management_system.dto;
+package com.card_management_system.dto.card;
 
 import com.card_management_system.common.CardStatus;
 
 import java.time.ZonedDateTime;
 
-public class CardResponse {
+public class CardRequest {
 
-    private final Long id;
+    private Long id;
 
     private String number;
     private String owner;
@@ -16,7 +16,7 @@ public class CardResponse {
     private CardStatus status;
     private Long balance;
 
-    public CardResponse(Long id, String number, String owner, ZonedDateTime expiryDate, CardStatus status, Long balance) {
+    public CardRequest(Long id, String number, String owner, ZonedDateTime expiryDate, CardStatus status, Long balance) {
         this.id = id;
         this.number = number;
         this.owner = owner;

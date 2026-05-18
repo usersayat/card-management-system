@@ -2,17 +2,23 @@ package com.card_management_system.entity;
 
 import com.card_management_system.common.CardStatus;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.ZonedDateTime;
 
 @Entity
+@Table(name = "cards")
 public class Card {
     @Id()
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String number;
-    private String owner;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User owner;
 
     private ZonedDateTime expiryDate;
 
@@ -20,27 +26,12 @@ public class Card {
     @Column(length = 20)
     private CardStatus status;
     private Long balance;
+
+    @CreationTimestamp
     private ZonedDateTime createdAt;
+    @UpdateTimestamp
     private ZonedDateTime updatedAt;
 
-    public Card() {
-    }
-
-    public Card(String number,
-                String owner,
-                ZonedDateTime expiryDate,
-                CardStatus status,
-                Long balance,
-                ZonedDateTime createdAt,
-                ZonedDateTime updatedAt) {
-        this.number = number;
-        this.owner = owner;
-        this.expiryDate = expiryDate;
-        this.status = status;
-        this.balance = balance;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 
     public Long getId() {
         return id;
@@ -50,7 +41,7 @@ public class Card {
         return number;
     }
 
-    public String getOwner() {
+    public User getOwner() {
         return owner;
     }
 
@@ -78,7 +69,7 @@ public class Card {
         this.number = number;
     }
 
-    public void setOwner(String owner) {
+    public void setOwner(User owner) {
         this.owner = owner;
     }
 

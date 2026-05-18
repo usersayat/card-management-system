@@ -1,9 +1,12 @@
-package com.card_management_system.dto;
+package com.card_management_system.dto.user;
 
-public class LoginRequest {
+import java.util.List;
+
+public class UserRequest {
 
     private String username;
     private String password;
+    private String role;
 
     public String getUsername() {
         return username;
@@ -19,5 +22,13 @@ public class LoginRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

@@ -1,10 +1,10 @@
 package com.card_management_system.controller;
 
-import com.card_management_system.dto.LoginRequest;
-import com.card_management_system.dto.RegisterRequest;
+import com.card_management_system.dto.auth.LoginRequest;
+import com.card_management_system.dto.auth.RegisterRequest;
 import com.card_management_system.entity.User;
 import com.card_management_system.service.JwtTokenService;
-import com.card_management_system.service.UserService;
+import com.card_management_system.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,21 +16,21 @@ import java.util.Map;
 
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
 
-    private final UserService userService;
+    private final AuthService authService;
     private final JwtTokenService jwtTokenService;
 
-    public AuthController(UserService userService, JwtTokenService jwtTokenService) {
-        this.userService = userService;
+    public AuthController(AuthService authService, JwtTokenService jwtTokenService) {
+        this.authService = authService;
         this.jwtTokenService = jwtTokenService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            User user = userService.authenticate(request.getUsername(), request.getPassword());
+            User user = authService.authenticate(request.getUsername(), request.getPassword());
             String token = jwtTokenService.generateToken(user.getUsername(), user.getRole());
             return ResponseEntity.ok(Map.of("token", token));
         } catch (IllegalArgumentException e) {
@@ -47,7 +47,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
-            userService.register(request);
+            authService.register(request);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body("User has been successfully registered");

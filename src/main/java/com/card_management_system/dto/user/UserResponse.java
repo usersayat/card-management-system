@@ -1,23 +1,14 @@
-package com.card_management_system.entity;
-
-import jakarta.persistence.*;
+package com.card_management_system.dto.user;
 
 import java.util.List;
 
-@Entity
-@Table(name = "users")
-public class User {
+public class UserResponse {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String username;
     private String password;
     private String role;
-
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Card> cards;
+    private List<String> cards;
 
     public Long getId() {
         return id;
@@ -51,25 +42,11 @@ public class User {
         this.role = role;
     }
 
-    public List<Card> getCards() {
+    public List<String> getCards() {
         return cards;
     }
 
-    public void setCards(List<Card> cards) {
+    public void setCards(List<String> cards) {
         this.cards = cards;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (!(obj instanceof User user))
-            return false;
-        return id != null && id.equals(user.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
     }
 }

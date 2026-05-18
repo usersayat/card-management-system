@@ -1,4 +1,4 @@
-package com.card_management_system.dto;
+package com.card_management_system.dto.auth;
 
 public class RegisterRequest {
 

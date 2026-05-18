@@ -1,62 +1,84 @@
 package com.card_management_system.service;
 
-import com.card_management_system.common.ServiceException;
-import com.card_management_system.dto.RegisterRequest;
+import com.card_management_system.dto.user.UserRequest;
+import com.card_management_system.dto.user.UserResponse;
+import com.card_management_system.entity.Card;
 import com.card_management_system.entity.User;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 import com.card_management_system.repository.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    @Value("${admin.registration-key}")
-    private String adminRegistrationKey;
-
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
-    public void register(RegisterRequest request) {
-        if (userRepository.findByUsername(request.getUsername()).isPresent())
-            throw new IllegalArgumentException("User already exists");
+    public UserResponse getUser(Long id) {
+        User user = userRepository
+                .findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User doesn't exist"));
+        return toUserResponse(user);
+    }
 
-        User user = new User();
+    public List<UserResponse> getAllUsers() {
+        List<UserResponse> users = userRepository
+                .findAll()
+                .stream()
+                .map(this::toUserResponse)
+                .toList();
+
+        return users;
+    }
+
+    @Transactional
+    public UserResponse editUser(Long id, UserRequest request) {
+        User user = userRepository
+                .findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User doesn't exist"));
+
         user.setUsername(request.getUsername());
+        user.setPassword(request.getPassword());
+        user.setRole(request.getRole());
 
-        String hashedPassword = passwordEncoder.encode(request.getPassword());
-        user.setPassword(hashedPassword);
-
-        if (request.getRole() == null || request.getRole().trim().isEmpty()) {
-            user.setRole("ROLE_USER");
-        }
-        else {
-            String finalRole = request.getRole().toUpperCase().trim();
-            if (!finalRole.startsWith("ROLE_"))
-                finalRole = "ROLE_" + finalRole;
-
-            if ("ROLE_ADMIN".equals(finalRole))
-                if (!adminRegistrationKey.equals(request.getAdminSecretKey()))
-                    throw new IllegalArgumentException("Access denied");
-
-            user.setRole(finalRole);
-        }
-
-        userRepository.save(user);
+        return toUserResponse(user);
     }
 
-    public User authenticate(String username, String password) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Wrong login"));
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
 
-        if (!passwordEncoder.matches(password, user.getPassword()))
-            throw new IllegalArgumentException("Wrong login or password");
+    public UserResponse changeRole(Long id, String newRole) {
+        User user = userRepository
+                .findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User doesn't exist"));
 
-        return user;
+        String formattedRole = newRole.toUpperCase().trim();
+        if (!formattedRole.startsWith("ROLE_")) {
+            formattedRole = "ROLE_" + formattedRole;
+        }
+
+        user.setRole(formattedRole);
+        return toUserResponse(userRepository.save(user));
+    }
+
+    public UserResponse toUserResponse(User user) {
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setPassword(user.getPassword());
+        response.setRole(user.getRole());
+        List<String> cards = user
+                .getCards()
+                .stream()
+                .map(Card::getNumber)
+                .toList();
+        response.setCards(cards);
+        return response;
     }
 }
