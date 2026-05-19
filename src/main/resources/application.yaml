@@ -22,6 +22,14 @@ jwt:
 admin:
   registration-key: "MY_SUPER_SECRET_ADMIN_PASSWORD_777"
 
-#  server:
-#    port: 8081
+springdoc:
+  api-docs:
+    path: /v3/api-docs # Путь к сырому JSON-мозгу документации
+  swagger-ui:
+    path: /swagger-ui.html # Путь к красивой веб-странице в браузере
+    operations-sorter: alpha # Сортировка методов по алфавиту
+    tags-sorter: alpha # Сортировка групп контроллеров по алфавиту
+
+server:
+  port: 8080
 
