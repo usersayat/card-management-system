@@ -179,8 +179,17 @@ public class CardService {
     }
 
     private CardResponse toCardResponse(Card cardEntity) {
+        String fullNumber = cardEntity.getNumber();
+
+        if (fullNumber == null || fullNumber.length() < 4) {
+            fullNumber = "****";
+        } else {
+            String lastFourDigits = fullNumber.substring(fullNumber.length() - 4);
+            fullNumber = "**** **** **** " + lastFourDigits;
+        }
+
         return new CardResponse(cardEntity.getId(),
-                cardEntity.getNumber(),
+                fullNumber,
                 cardEntity.getOwner().getUsername(),
                 cardEntity.getExpiryDate(),
                 cardEntity.getStatus(),

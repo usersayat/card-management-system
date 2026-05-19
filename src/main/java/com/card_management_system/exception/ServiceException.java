@@ -1,4 +1,4 @@
-package com.card_management_system.common;
+package com.card_management_system.exception;
 
 import java.util.List;
 

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 public class UserService {
@@ -22,25 +23,23 @@ public class UserService {
     public UserResponse getUser(Long id) {
         User user = userRepository
                 .findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User doesn't exist"));
+                .orElseThrow(() -> new NoSuchElementException("User doesn't exist"));
         return toUserResponse(user);
     }
 
     public List<UserResponse> getAllUsers() {
-        List<UserResponse> users = userRepository
+        return userRepository
                 .findAll()
                 .stream()
                 .map(this::toUserResponse)
                 .toList();
-
-        return users;
     }
 
     @Transactional
     public UserResponse editUser(Long id, UserRequest request) {
         User user = userRepository
                 .findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User doesn't exist"));
+                .orElseThrow(() -> new NoSuchElementException("User doesn't exist"));
 
         user.setUsername(request.getUsername());
         user.setPassword(request.getPassword());
@@ -56,7 +55,7 @@ public class UserService {
     public UserResponse changeRole(Long id, String newRole) {
         User user = userRepository
                 .findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User doesn't exist"));
+                .orElseThrow(() -> new NoSuchElementException("User doesn't exist"));
 
         String formattedRole = newRole.toUpperCase().trim();
         if (!formattedRole.startsWith("ROLE_")) {
