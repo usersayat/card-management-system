@@ -3,15 +3,20 @@ package com.card_management_system.service;
 import com.card_management_system.common.CardStatus;
 import com.card_management_system.dto.card.CardResponse;
 import com.card_management_system.entity.Card;
+import com.card_management_system.entity.CardSpecifications;
 import com.card_management_system.entity.User;
 import com.card_management_system.repository.CardRepository;
 import com.card_management_system.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Random;
 
 @Service
@@ -26,22 +31,8 @@ public class CardService {
         this.userRepository = userRepository;
     }
 
-    public CardResponse getCard(Long id) {
-
-            Card card = cardRepository
-                    .findById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("card doesn't exist"));
-            return toCardResponse(card);
-    }
-
-    public void deleteCard(Long id) {
-
-            cardRepository.deleteById(id);
-    }
-
     public CardResponse issueCard(String ownerUsername) {
-        User owner = userRepository
-                .findByUsername(ownerUsername)
+        User owner = userRepository.findByUsername(ownerUsername)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         Card card = new Card();
@@ -54,11 +45,99 @@ public class CardService {
         return toCardResponse(cardRepository.save(card));
     }
 
+    public CardResponse getCard(Long id) {
+            Card card = cardRepository.findById(id)
+                    .orElseThrow(() -> new NoSuchElementException("Card doesn't exist"));
+            return toCardResponse(card);
+    }
+
+    public void deleteCard(Long id) {
+
+            cardRepository.deleteById(id);
+    }
+
+    public Page<CardResponse> getCardsByUsername(String username, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User doesn't exist"));
+
+        return cardRepository.findByOwnerUsername(username, pageable)
+                .map(this::toCardResponse);
+    }
+
+    public Long getBalance(Long id, String username) {
+        Card card = cardRepository.findByIdAndOwnerUsername(id, username)
+                .orElseThrow(() -> new NoSuchElementException("Card doesn't exist"));
+
+        return card.getBalance();
+    }
+
+    public Page<CardResponse> searchCard(String username,
+                                 CardStatus status,
+                                 Long minBalance,
+                                 int page,
+                                 int size) {
+        Specification<Card> spec = Specification.where(CardSpecifications.hasUsername(username));
+
+        if (status != null)
+            spec = spec.and(CardSpecifications.hasStatus(status));
+
+        if (minBalance != null)
+            spec = spec.and(CardSpecifications.minBalance(minBalance));
+
+        Pageable pageable = PageRequest.of(page, size);
+
+
+        return cardRepository.findAll(spec, pageable).map(this::toCardResponse);
+    }
+
+    @Transactional
+    public CardResponse deposit(Long id, Long amount, String username) {
+        if (amount <= 0)
+            throw new IllegalArgumentException("Amount should be greater than zero");
+
+        Card card = cardRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Card doesn't exist"));
+
+        if (card.getStatus() != CardStatus.ACTIVE)
+            throw new IllegalStateException("Card should be active");
+
+        card.setBalance(card.getBalance() + amount);
+
+        return toCardResponse(cardRepository.save(card));
+    }
+
+    @Transactional
+    public void transfer(Long idOfCardFrom, String numberOfCardTo, Long amount, String username) {
+        if (amount <= 0)
+            throw new IllegalArgumentException("Amount should be greater than zero");
+
+        Card cardFrom = cardRepository.findByIdAndOwnerUsername(idOfCardFrom, username)
+                .orElseThrow(() -> new NoSuchElementException("Sender's card doesn't exist"));
+
+        Card cardTo = cardRepository.findByNumber(numberOfCardTo)
+                .orElseThrow(() -> new NoSuchElementException("Recipient's card doesn't exist"));
+
+        if ((cardFrom.getStatus() != CardStatus.ACTIVE) || (cardTo.getStatus() != CardStatus.ACTIVE))
+            throw new IllegalStateException("Card should be active");
+
+        if (cardFrom.getBalance() < amount)
+            throw new IllegalArgumentException("Not enough money to transfer");
+
+        cardFrom.setBalance(cardFrom.getBalance() - amount);
+        cardTo.setBalance(cardTo.getBalance() + amount);
+
+        cardRepository.save(cardFrom);
+        cardRepository.save(cardTo);
+
+    }
+
     @Transactional
     public CardResponse changeStatusAccessForAdmin(Long id, CardStatus status) {
-        Card card = cardRepository
-                .findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Card doesn't exist"));
+        Card card = cardRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Card doesn't exist"));
 
         card.setStatus(status);
         return toCardResponse(card);
@@ -66,24 +145,12 @@ public class CardService {
 
     @Transactional
     public CardResponse blockCardAccessForUser(Long id, String username) {
-        Card card = cardRepository
-                .findByIdAndOwnerUsername(id, username);
-        if (card == null)
-            throw new IllegalArgumentException("Card doesn't exists");
+        Card card = cardRepository.findByIdAndOwnerUsername(id, username)
+                .orElseThrow(() -> new NoSuchElementException("Card doesn't exists"));
+
 
         card.setStatus(CardStatus.BLOCKED);
         return toCardResponse(card);
-    }
-
-    public List<CardResponse> getCardsByUsername(String username) {
-        userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User doesn't exist"));
-
-        return cardRepository
-                .findByOwnerUsername(username)
-                .stream()
-                .map(this::toCardResponse)
-                .toList();
     }
 
     /**
@@ -105,7 +172,7 @@ public class CardService {
             cardNumber = sb.toString();
 
             // Проверяем в MySQL, свободен ли этот номер
-            isUnique = cardRepository.findByNumber(cardNumber) == null;
+            isUnique = cardRepository.findByNumber(cardNumber).isEmpty();
         } while (!isUnique); // Если номер уже занят, цикл запустится заново
 
         return cardNumber;

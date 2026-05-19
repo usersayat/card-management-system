@@ -1,9 +1,18 @@
 package com.card_management_system.dto.auth;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 public class RegisterRequest {
 
+    @NotBlank(message = "Username shouldn't be empty")
+    @Size(min = 4, max = 20, message = "Size of username should be between 4 and 20")
     private String username;
+
+    @NotBlank(message = "Password shouldn't be empty")
+    @Size(min = 6, message = "Password size should be at least 6")
     private String password;
+
     private String role;
     private String adminSecretKey;
 

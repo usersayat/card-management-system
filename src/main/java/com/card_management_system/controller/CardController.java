@@ -9,8 +9,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
-@RequestMapping("/api/card")
+@RequestMapping("/api/cards")
 public class CardController {
 
     private final CardService cardService;
@@ -32,16 +34,42 @@ public class CardController {
         return ResponseEntity.ok(cardService.getCard(id));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<?> search(@AuthenticationPrincipal Jwt jwt,
+                                    @RequestParam(required = false) CardStatus status,
+                                    @RequestParam(required = false) Long minBalance,
+                                    @RequestParam(defaultValue = "0") int page,
+                                    @RequestParam(defaultValue = "10") int size) {
+        String username = jwt.getSubject();
+
+        return ResponseEntity.ok(cardService.searchCard(username, status, minBalance, page, size));
+    }
+
     @GetMapping("/{id}/cards")
     @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_ADMIN')")
-    public ResponseEntity<?> getCardsByUsername(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<?> getCardsByUsername(@AuthenticationPrincipal Jwt jwt,
+                                                @RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "10") int size) {
         String ownerUsername = jwt.getSubject();
-        return ResponseEntity.ok(cardService.getCardsByUsername(ownerUsername));
+        return ResponseEntity.ok(cardService.getCardsByUsername(ownerUsername, page, size));
     }
 
     @GetMapping("/user-cards")
-    public ResponseEntity<?> getUserCardsForAdmin(@RequestParam String username) {
-        return ResponseEntity.ok(cardService.getCardsByUsername(username));
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> getUserCardsForAdmin(@RequestParam String username,
+                                                  @RequestParam(defaultValue = "0") int page,
+                                                  @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(cardService.getCardsByUsername(username, page, size));
+    }
+
+    @GetMapping("/{id}/balance")
+    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_ADMIN')")
+    public ResponseEntity<?> getBalance (@PathVariable Long id,
+                                         @AuthenticationPrincipal Jwt jwt) {
+        String username = jwt.getSubject();
+
+        Long balance = cardService.getBalance(id, username);
+        return ResponseEntity.ok(Map.of("balance", balance));
     }
 
     @DeleteMapping("/{id}")
@@ -52,8 +80,34 @@ public class CardController {
                 .build();
     }
 
+    @PatchMapping("/{id}/deposit")
+    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_ADMIN')")
+    public ResponseEntity<?> deposit(@PathVariable Long id,
+                                     @AuthenticationPrincipal Jwt jwt,
+                                     @RequestParam Long amount) {
+        String username = jwt.getSubject();
+        return ResponseEntity.ok(cardService.deposit(id, amount, username));
+    }
+
+    //Переводы между любыми существующими картами
+    @PatchMapping("/{idOfCardFrom}/transfer")
+    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_ADMIN')")
+    public ResponseEntity<Void> transfer(@PathVariable Long idOfCardFrom,
+                                         @RequestParam String numberOfCardTo,
+                                         @RequestParam Long amount,
+                                         @AuthenticationPrincipal Jwt jwt) {
+        String username = jwt.getSubject();
+
+        cardService.transfer(idOfCardFrom, numberOfCardTo, amount, username);
+        return ResponseEntity
+                .ok()
+                .build();
+    }
+
     @PatchMapping("/{id}/block")
-    public ResponseEntity<?> blockCardForUser(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_ADMIN')")
+    public ResponseEntity<?> blockCardForUser(@PathVariable Long id,
+                                              @AuthenticationPrincipal Jwt jwt) {
         String username = jwt.getSubject();
 
         return ResponseEntity.ok(cardService.blockCardAccessForUser(id, username));

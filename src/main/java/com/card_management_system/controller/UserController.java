@@ -2,13 +2,14 @@ package com.card_management_system.controller;
 
 import com.card_management_system.dto.user.UserRequest;
 import com.card_management_system.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
@@ -31,7 +32,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> editUser(@PathVariable Long id, @RequestBody UserRequest request) {
+    public ResponseEntity<?> editUser(@PathVariable Long id, @Valid @RequestBody UserRequest request) {
         return ResponseEntity.ok(userService.editUser(id, request));
     }
 

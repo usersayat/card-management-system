@@ -5,6 +5,7 @@ import com.card_management_system.dto.auth.RegisterRequest;
 import com.card_management_system.entity.User;
 import com.card_management_system.service.JwtTokenService;
 import com.card_management_system.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,7 +46,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
             authService.register(request);
             return ResponseEntity
